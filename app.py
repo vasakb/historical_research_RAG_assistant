@@ -6,6 +6,7 @@ research assistance using Retrieval-Augmented Generation (RAG).
 """
 
 import os
+from pathlib import Path
 from typing import List, Optional
 import streamlit as st
 from dotenv import load_dotenv
@@ -55,12 +56,56 @@ def display_chat_message(role: str, content: str, pages: Optional[List[int]] = N
             st.caption(f"📑 **Document Sources:** {page_tags}")
 
 
+def render_sidebar():
+    """Render the sidebar with document and vector database metadata."""
+    with st.sidebar:
+        st.title("📚 Corpus & System Info")
+        st.markdown(
+            "**Modern History & Archival Chronicle Assistant**\n\n"
+            "An AI-powered research assistant grounded in official 19th-century "
+            "colonial records on Indian Railways and Telegraph infrastructure."
+        )
+
+        st.divider()
+        st.subheader("📄 Document Details")
+        st.markdown("- **Document Name**: `indian_railways_and_telegraph_history_50p.pdf`")
+        st.markdown("- **Total Pages**: `50` pages")
+        st.markdown("- **Extracted Pages**: `50` (100% text coverage)")
+
+        st.divider()
+        st.subheader("🧠 Vector Database & Model")
+        st.markdown("- **Total Chunks**: `147` chunks (~640 chars avg)")
+        st.markdown("- **Chunk Size / Overlap**: `800` / `150` characters")
+        st.markdown("- **Embedding Model**: `sentence-transformers/all-MiniLM-L6-v2`")
+        st.markdown("- **Vector Dimension**: `384` dimensions")
+
+        # Check FAISS index status on disk
+        faiss_dir = Path("vector_store")
+        if (faiss_dir / "index.faiss").exists() and (faiss_dir / "index.pkl").exists():
+            st.success("✅ **FAISS Database**: Loaded & Ready (`vector_store/`)")
+        else:
+            st.warning("⚠️ **FAISS Database**: Index files not detected in `vector_store/`")
+
+        st.divider()
+        st.subheader("⚡ Inference Engine")
+        st.markdown("- **LLM Provider**: `Groq Cloud API`")
+        st.markdown("- **Model**: `qwen/qwen3.8-27b`")
+
+        st.divider()
+        if st.button("🗑️ Clear Chat History", use_container_width=True):
+            st.session_state.messages = []
+            st.rerun()
+
+
 def main():
     st.set_page_config(
         page_title="Modern History & Archival Chronicle Assistant",
         page_icon="📜",
         layout="wide",
     )
+
+    # Render Sidebar with metadata
+    render_sidebar()
 
     # Header & Title
     st.title("📜 Modern History & Archival Chronicle Assistant")
