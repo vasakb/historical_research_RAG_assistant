@@ -1,0 +1,30 @@
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python cache & build files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment variables & secrets
+.env
+
+# Streamlit local settings & cache
+.streamlit/
+
+# Vector database local storage (ignore indexed files, keep folder)
+vectorstore/*
+!vectorstore/.gitkeep
+
+# Local data / uploaded historical PDFs
+data/*
+!data/.gitkeep
+!data/indian_railways_and_telegraph_history_50p.pdf
+
+# macOS specific files
+.DS_Store
+Thumbs.db
+
