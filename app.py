@@ -1,83 +1,102 @@
 """
-Historical Research Assistant - Streamlit Frontend
-===================================================
-Web-based interactive user interface for uploading historical PDFs,
-asking questions, and viewing context-grounded answers.
+Modern History & Archival Chronicle Assistant
+==============================================
+A Streamlit-based interactive chatbot providing fact-grounded historical
+research assistance using Retrieval-Augmented Generation (RAG).
 """
 
-import os
+import sys
+from pathlib import Path
+from typing import List, Optional
 import streamlit as st
 from dotenv import load_dotenv
 
-# Load environment variables (e.g., GROQ_API_KEY from .env)
+# Load environment variables (.env)
 load_dotenv()
 
 
-def main():
-    st.set_page_config(
-        page_title="Historical Research Assistant",
-        page_icon="📜",
-        layout="wide",
-    )
-
-    st.title("📜 Historical Research Assistant")
-    st.markdown(
-        "Welcome! This assistant uses Retrieval-Augmented Generation (RAG) "
-        "to answer questions from historical documents and archives."
-    )
-
-    # Sidebar for Configuration & Document Upload
-    with st.sidebar:
-        st.header("⚙️ Configuration")
-        groq_api_key = st.text_input(
-            "Groq API Key",
-            type="password",
-            value=os.getenv("GROQ_API_KEY", ""),
-            help="Enter your Groq API key or add it to a .env file.",
-        )
-
-        st.divider()
-        st.header("📂 Document Upload")
-        uploaded_file = st.file_uploader(
-            "Upload Historical PDF",
-            type=["pdf"],
-            help="Upload a research paper, historical archive, or source text.",
-        )
-
-        if uploaded_file is not None:
-            st.success(f"File uploaded: `{uploaded_file.name}`")
-            if st.button("Process Document", use_container_width=True):
-                st.info("Document processing will be connected here.")
-
-    # Main Chat Area
-    st.subheader("💬 Ask a Historical Question")
-
-    # Chat history container placeholder
+def init_session_state():
+    """Initialize chat messages history in Streamlit session state."""
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {
                 "role": "assistant",
-                "content": "Hello! Once you configure your Groq key and upload a document, ask me any question about your historical text.",
+                "content": (
+                    "Welcome! I am your Modern History & Archival Chronicle Assistant. "
+                    "Ask me questions about 19th-century Indian railways, telegraph infrastructure, "
+                    "or Lord Dalhousie's railway minutes, and I will cite the exact document pages."
+                ),
+                "pages": [],
             }
         ]
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
 
-    # Chat input
-    user_query = st.chat_input("Ask a question about the uploaded document...")
+def display_chat_message(role: str, content: str, pages: Optional[List[int]] = None):
+    """Render a single chat message bubble with optional source page tags."""
+    with st.chat_message(role):
+        st.markdown(content)
+        if pages and len(pages) > 0:
+            page_tags = " ".join([f"`Page {p}`" for p in pages])
+            st.caption(f"📑 **Document Sources:** {page_tags}")
+
+
+def main():
+    st.set_page_config(
+        page_title="Modern History & Archival Chronicle Assistant",
+        page_icon="📜",
+        layout="wide",
+    )
+
+    # Header & Title
+    st.title("📜 Modern History & Archival Chronicle Assistant")
+    st.markdown(
+        "Welcome to the **Modern History & Archival Chronicle Assistant**. "
+        "This interactive tool queries 19th-century archival records on Indian Railways "
+        "and Telegraphs, delivering verified answers grounded strictly in source documentation "
+        "with precise page citations."
+    )
+    st.divider()
+
+    # Initialize chat history
+    init_session_state()
+
+    # Display past conversation history
+    for msg in st.session_state.messages:
+        display_chat_message(
+            role=msg["role"],
+            content=msg["content"],
+            pages=msg.get("pages"),
+        )
+
+    # User chat input
+    user_query = st.chat_input("Ask a historical question (e.g., 'What gauge was standardized for Indian railways?')...")
+
     if user_query:
-        # Display user message
+        # Display user question
         st.session_state.messages.append({"role": "user", "content": user_query})
         with st.chat_message("user"):
-            st.write(user_query)
+            st.markdown(user_query)
 
-        # Assistant response placeholder
+        # Generate response placeholder (wired to RAG pipeline in Task 2)
         with st.chat_message("assistant"):
-            st.write("*(RAG response logic will be connected here in the next step)*")
+            try:
+                with st.spinner("Searching historical archives and generating grounded response..."):
+                    response_text = f"Received your question: '{user_query}'. RAG pipeline connection in progress."
+                    cited_pages = [1]
+                    st.markdown(response_text)
+                    page_tags = " ".join([f"`Page {p}`" for p in cited_pages])
+                    st.caption(f"📑 **Document Sources:** {page_tags}")
+
+                    st.session_state.messages.append(
+                        {
+                            "role": "assistant",
+                            "content": response_text,
+                            "pages": cited_pages,
+                        }
+                    )
+            except Exception as e:
+                st.error(f"An unexpected error occurred while processing your request: {e}")
 
 
 if __name__ == "__main__":
     main()
-
