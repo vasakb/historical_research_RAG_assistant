@@ -18,6 +18,8 @@ __pycache__/
 # Vector database local storage (ignore indexed files, keep folder)
 vectorstore/*
 !vectorstore/.gitkeep
+vector_store/*
+!vector_store/.gitkeep
 
 # Local data / uploaded historical PDFs
 data/*
