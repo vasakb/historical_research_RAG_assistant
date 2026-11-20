@@ -5,14 +5,29 @@ A Streamlit-based interactive chatbot providing fact-grounded historical
 research assistance using Retrieval-Augmented Generation (RAG).
 """
 
-import sys
-from pathlib import Path
+import os
 from typing import List, Optional
 import streamlit as st
 from dotenv import load_dotenv
 
+from rag_pipeline import HistoricalRAGPipeline, RAGResponse
+
 # Load environment variables (.env)
 load_dotenv()
+
+
+@st.cache_resource(show_spinner=False)
+def get_rag_pipeline() -> HistoricalRAGPipeline:
+    """
+    Initialize and cache the RAG pipeline using existing FAISS vector database.
+    Cached so FAISS index is only loaded once into memory across user sessions.
+    """
+    return HistoricalRAGPipeline(
+        vector_store_path="vector_store",
+        k=4,
+        model_name="qwen/qwen3.8-27b",
+        temperature=0.2,
+    )
 
 
 def init_session_state():
@@ -77,25 +92,39 @@ def main():
         with st.chat_message("user"):
             st.markdown(user_query)
 
-        # Generate response placeholder (wired to RAG pipeline in Task 2)
+        # Generate response using connected RAG pipeline
         with st.chat_message("assistant"):
             try:
                 with st.spinner("Searching historical archives and generating grounded response..."):
-                    response_text = f"Received your question: '{user_query}'. RAG pipeline connection in progress."
-                    cited_pages = [1]
-                    st.markdown(response_text)
-                    page_tags = " ".join([f"`Page {p}`" for p in cited_pages])
-                    st.caption(f"📑 **Document Sources:** {page_tags}")
+                    pipeline = get_rag_pipeline()
+                    rag_response: RAGResponse = pipeline.query(user_query)
 
+                    # Display generated answer
+                    st.markdown(rag_response.answer)
+
+                    # Display retrieved source page citations
+                    if rag_response.cited_pages and len(rag_response.cited_pages) > 0:
+                        page_tags = " ".join([f"`Page {p}`" for p in rag_response.cited_pages])
+                        st.caption(f"📑 **Document Sources:** {page_tags}")
+
+                    # Save to chat history
                     st.session_state.messages.append(
                         {
                             "role": "assistant",
-                            "content": response_text,
-                            "pages": cited_pages,
+                            "content": rag_response.answer,
+                            "pages": rag_response.cited_pages,
                         }
                     )
             except Exception as e:
-                st.error(f"An unexpected error occurred while processing your request: {e}")
+                error_msg = f"An error occurred while generating the answer: {e}"
+                st.error(error_msg)
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": f"⚠️ {error_msg}",
+                        "pages": [],
+                    }
+                )
 
 
 if __name__ == "__main__":
